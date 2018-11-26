@@ -18,14 +18,14 @@ Read about it online.
 import os
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect, Response
+from flask import Flask, request, render_template, g, redirect, Response, url_for
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
 
 
 
-# XXX: The Database URI should be in the format of: 
+# XXX: The Database URI should be in the format of:
 #
 #     postgresql://USER:PASSWORD@<IP_OF_POSTGRE_SQL_SERVER>/<DB_NAME>
 #
@@ -36,8 +36,9 @@ app = Flask(__name__, template_folder=tmpl_dir)
 # For your convenience, we already set it to the class database
 
 # Use the DB credentials you received by e-mail
-DB_USER = "YOUR_DB_USERNAME_HERE"
-DB_PASSWORD = "YOUR_DB_PASSWORD_HERE"
+DB_USER = "bq2130"
+DB_PASSWORD = "2v9c3q6j"
+
 
 DB_SERVER = "w4111.cisxo09blonu.us-east-1.rds.amazonaws.com"
 
@@ -50,23 +51,12 @@ DATABASEURI = "postgresql://"+DB_USER+":"+DB_PASSWORD+"@"+DB_SERVER+"/w4111"
 engine = create_engine(DATABASEURI)
 
 
-# Here we create a test table and insert some values in it
-engine.execute("""DROP TABLE IF EXISTS test;""")
-engine.execute("""CREATE TABLE IF NOT EXISTS test (
-  id serial,
-  name text
-);""")
-engine.execute("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
-
-
-
 @app.before_request
 def before_request():
   """
-  This function is run at the beginning of every web request 
+  This function is run at the beginning of every web request
   (every time you enter an address in the web browser).
   We use it to setup a database connection that can be used throughout the request
-
   The variable g is globally accessible
   """
   try:
@@ -87,101 +77,73 @@ def teardown_request(exception):
   except Exception as e:
     pass
 
-
-#
-# @app.route is a decorator around index() that means:
-#   run index() whenever the user tries to access the "/" path using a GET request
-#
-# If you wanted the user to go to e.g., localhost:8111/foobar/ with POST or GET then you could use
-#
-#       @app.route("/foobar/", methods=["POST", "GET"])
-#
-# PROTIP: (the trailing / in the path is important)
-# 
-# see for routing: http://flask.pocoo.org/docs/0.10/quickstart/#routing
-# see for decorators: http://simeonfranklin.com/blog/2012/jul/1/python-decorators-in-12-steps/
-#
-@app.route('/')
+##################################################################################
+@app.route('/', methods=['GET','POST'])
 def index():
-  """
-  request is a special object that Flask provides to access web request information:
+  if request.method == 'POST':
+        data = request.form.to_dict(flat=True)
+        if data['option'] == 'user_by_name':
+            cursor = g.conn.execute("SELECT user_name FROM venmo_users WHERE user_name = %s", data['content'])
+            user = cursor.fetchone()
+            if user is None:
+                return render_template('index.html', error="No such user")
+            return redirect(url_for('read_user', id=data['content']))
+        elif data['option'] == 'trx_by_date':
+            cursor = g.conn.execute("SELECT payment_id FROM transa_transf WHERE created_time = %s", data['content'])
+            transaction_by_date = cursor.fetchone()
+            if transaction_by_date is None:
+                return render_template('index.html', error="No such transaction")
+            return redirect(url_for('read_trx', id=data['content']))
+        elif data['option'] == 'risk_by_name':
+            cursor = g.conn.execute("SELECT user_name FROM person_risk_temp WHERE user_name = %s", data['content'])
+            user_risk = cursor.fetchone()
+            if user_risk is None:
+                return render_template('index.html', error="No such user")
+            return redirect(url_for('read_risk', id=data['content']))
+        elif data['option'] == 'card_by_name':
+            cursor = g.conn.execute("SELECT user_name FROM bank_pay WHERE user_name = %s", data['content'])
+            user_card = cursor.fetchone()
+            if user_card is None:
+                return render_template('index.html', error="No such user")
+            return redirect(url_for('read_card', id=data['content']))
+        else:
+            return render_template('index.html', error="Invalid option")
+  return render_template("index.html", error=None)
 
-  request.method:   "GET" or "POST"
-  request.form:     if the browser submitted a form, this contains the data in the form
-  request.args:     dictionary of URL arguments e.g., {a:1, b:2} for http://localhost?a=1&b=2
+@app.route('/users')
+def users():
+  cursor = g.conn.execute("SELECT * FROM venmo_users")
+  users = cursor.fetchall()
+  return render_template('users.html', users=users)
 
-  See its API: http://flask.pocoo.org/docs/0.10/api/#incoming-request-data
-  """
+@app.route('/user/<id>')
+def read_user(id):
+  cursor = g.conn.execute("SELECT * FROM venmo_users WHERE user_name = %s", id)
+  user = cursor.fetchone()
+  return render_template('/user.html', user=user)
 
-  # DEBUG: this is debugging code to see what request looks like
-  print request.args
+@app.route('/risk/<id>')
+def read_risk(id):
+   cursor = g.conn.execute("SELECT * FROM person_risk_result WHERE user_name = %s", id)
+   risk = cursor.fetchone()
+   return render_template('/risk.html', risk = risk)
 
+@app.route('/card/<id>')
+def read_card(id):
+    cursor = g.conn.execute("select * from bank_pay where user_name = %s", id)
+    card = cursor.fetchall()
+    return render_template('/card.html', card = card)
 
-  #
-  # example of a database query
-  #
-  cursor = g.conn.execute("SELECT name FROM test")
-  names = []
-  for result in cursor:
-    names.append(result['name'])  # can also be accessed using result[0]
-  cursor.close()
-
-  #
-  # Flask uses Jinja templates, which is an extension to HTML where you can
-  # pass data to a template and dynamically generate HTML based on the data
-  # (you can think of it as simple PHP)
-  # documentation: https://realpython.com/blog/python/primer-on-jinja-templating/
-  #
-  # You can see an example template in templates/index.html
-  #
-  # context are the variables that are passed to the template.
-  # for example, "data" key in the context variable defined below will be 
-  # accessible as a variable in index.html:
-  #
-  #     # will print: [u'grace hopper', u'alan turing', u'ada lovelace']
-  #     <div>{{data}}</div>
-  #     
-  #     # creates a <div> tag for each element in data
-  #     # will print: 
-  #     #
-  #     #   <div>grace hopper</div>
-  #     #   <div>alan turing</div>
-  #     #   <div>ada lovelace</div>
-  #     #
-  #     {% for n in data %}
-  #     <div>{{n}}</div>
-  #     {% endfor %}
-  #
-  context = dict(data = names)
+@app.route('/trx/<id>')
+def read_trx(id):
+  cursor = g.conn.execute("SELECT * FROM transa_transf WHERE created_time = %s", id)
+  trx = cursor.fetchall()
+  return render_template('/trx.html', trx=trx)
 
 
-  #
-  # render_template looks in the templates/ folder for files.
-  # for example, the below file reads template/index.html
-  #
-  return render_template("index.html", **context)
-
-#
-# This is an example of a different path.  You can see it at
-# 
-#     localhost:8111/another
-#
-# notice that the functio name is another() rather than index()
-# the functions for each app.route needs to have different names
-#
 @app.route('/another')
 def another():
   return render_template("anotherfile.html")
-
-
-# Example of adding new data to the database
-@app.route('/add', methods=['POST'])
-def add():
-  name = request.form['name']
-  print name
-  cmd = 'INSERT INTO test(name) VALUES (:name1), (:name2)';
-  g.conn.execute(text(cmd), name1 = name, name2 = name);
-  return redirect('/')
 
 
 @app.route('/login')
@@ -202,13 +164,9 @@ if __name__ == "__main__":
     """
     This function handles command line parameters.
     Run the server using
-
         python server.py
-
     Show the help text using
-
         python server.py --help
-
     """
 
     HOST, PORT = host, port

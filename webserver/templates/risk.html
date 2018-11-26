@@ -1,0 +1,25 @@
+<table>
+    <caption>User Risk Analysis</caption>
+    <thead>
+        <tr>
+            <th>Venmo username</th>
+            <th scope="col">too many public payments (&gt 5) </th>
+            <th scope="col"> too obvious social network (including comment, like and transaction &gt 3)</th>
+            <th scope="col"> FB account evidence</th>
+            <th scope="col">Too detailed transaction description (max of length &gt 10) </th>
+            <th scope="col">Risk level out of 4</th>
+            <th scope="col">Keywords </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <th scope="row">{{risk.user_name}}</th>
+          <td>{{risk.too_many_payments}}</td>
+          <td>{{risk.too_many_friends_shown}}</td>
+          <td>{{risk.track_to_facebook}}</td>
+          <td>{{risk.too_detailed_notes}}</td>
+          <td>{{risk.risk_level}}</td>
+          <td>{{risk.keyword}}</td>
+          </tr>
+    </tbody>
+</table>

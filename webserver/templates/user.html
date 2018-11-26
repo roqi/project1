@@ -1,0 +1,22 @@
+<table>
+    <caption>User Personal Info</caption>
+    <thead>
+        <tr>
+            <th>Venmo username</th>
+            <th scope="col">full name</th>
+            <th scope="col">photo link</th>
+            <th scope="col">Facebook link</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <th scope="row">{{user.user_name}}</th>
+          <td>{{user.full_name}}</td>
+          <td>{{user.photo_link}}</td>
+          <td>{{user.fb_account}}</td>
+          </tr>
+    </tbody>
+</table>
+
+<p><a href="/risk/{{user.user_name}}">Go to your risk analysis page</a></p>
+<p><a href="/card/{{user.user_name}}">Check your bank accounts</a></p>

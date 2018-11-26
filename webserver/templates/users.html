@@ -1,0 +1,22 @@
+<table>
+    <caption>Search for all the user info</caption>
+    <thead>
+      <tr>
+          <th>Venmo username</th>
+          <th scope="col">full name</th>
+          <th scope="col">photo link</th>
+          <th scope="col">Facebook link</th>
+      </tr>
+    </thead>
+    <tbody>
+    	{% for row in users %}
+          <tr>
+            <td>{{ row[0] }}</td>
+            <td>{{ row[1] }}</td>
+            <td>{{ row[2] }}</td>
+            <td>{{ row[3] }}</td>
+          </tr>
+    	{% endfor %}
+
+    </tbody>
+</table>

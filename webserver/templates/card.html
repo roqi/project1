@@ -1,0 +1,22 @@
+<table>
+    <caption>Search for bank cards associate with Venmo</caption>
+    <thead>
+        <tr>
+            <th>card_id</th>
+            <th scope="col">user_name </th>
+            <th scope="col">credit_debit</th>
+            <th scope="col">bank_name </th>
+        </tr>
+    </thead>
+    <tbody>
+    	{% for row in card %}
+          <tr>
+            <td>{{ row[0] }}</td>
+            <td>{{ row[1] }}</td>
+            <td>{{ row[2] }}</td>
+            <td>{{ row[3] }}</td>
+          </tr>
+    	{% endfor %}
+
+    </tbody>
+</table>
